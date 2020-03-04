@@ -1,0 +1,32 @@
+{
+  "name": "raincheck-notify",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "ts-node --files src/index.ts"
+  },
+  "dependencies": {
+    "@sendgrid/mail": "^6.5.2",
+    "darkskyapi-ts": "^1.0.6",
+    "dotenv": "^8.2.0",
+    "moment": "^2.24.0",
+    "moment-timezone": "^0.5.27",
+    "mysql": "^2.18.1"
+  },
+  "devDependencies": {
+    "@types/moment-timezone": "^0.5.12",
+    "@types/mysql": "^2.15.8",
+    "@typescript-eslint/eslint-plugin": "^2.19.0",
+    "@typescript-eslint/parser": "^2.19.0",
+    "eslint": "^6.8.0",
+    "eslint-config-standard": "^14.1.0",
+    "eslint-plugin-import": "^2.20.1",
+    "eslint-plugin-node": "^11.0.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-standard": "^4.0.1",
+    "ts-node": "^8.6.2",
+    "tslint": "^6.0.0",
+    "typescript": "^3.7.5"
+  }
+}
