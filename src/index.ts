@@ -5,39 +5,36 @@ import { get_trip_forecast } from './util/darksky'
 import { notify_user } from './util/notify'
 
 async function get_forecasts () {
-  const trips = await get_trips(12 * 60)
-  console.log('Trips:')
-  console.log(trips)
+  console.log(`${new Date().toISOString()}: Getting forecasts`)
+  console.log('Getting trips from database')
+  const trips = await get_trips(12 * 60).catch(error => Promise.reject(new Error(error)))
 
-  if (!trips || trips.length === 0) return
+  if (!trips || trips.length === 0) {
+    console.log('No trips to process')
+    return
+  }
 
-  // TODO: Get forecasts in parallel
-  const forecasts = []
-  for (const trip of trips) {
-    const forecast = await get_trip_forecast(trip)
+  console.log(`Getting forecasts for ${trips.length} trips`)
+  const forecasts = await Promise.all(trips.map(async trip => {
+    const forecast = await get_trip_forecast(trip).catch(error => Promise.reject(new Error(error)))
     if (!forecast) {
       console.log(`No forecast for trip ${trip.id}`)
-      continue
+      return null
     }
-    console.log(`Forecast for trip ${trip.id}:`)
-    console.log(forecast)
     notify_user(trip, forecast)
-    if (forecast) forecasts.push(forecast)
+    return forecast
+  }))
+
+  // So typescript knows 'validForecasts' only contains actually valid forecasts
+  const filterForecasts = (forecast: HourlyForecast|null): forecast is HourlyForecast => {
+    return forecast !== null
   }
-  write_forecasts(forecasts)
+
+  const validForecasts = forecasts.filter(filterForecasts)
+  console.log(`Writing ${validForecasts.length} forecasts to database`)
+  write_forecasts(validForecasts)
 }
 
-get_forecasts()
-
-/*
-const forecast = {
-  trip: 'ck6f1o2b1003s0781f8nx068t',
-  precip_probability: 0.46,
-  temperature: 10.64,
-  date: new Date('2020-02-09T00:00:00.000Z'),
-  precip_intensity: 1.2465,
-  precip_type: 'rain',
-  icon: 'rain',
-  summary: 'Possible Light Rain and Dangerously Windy'
-}
-*/
+get_forecasts().catch(error => {
+  console.log(error)
+})

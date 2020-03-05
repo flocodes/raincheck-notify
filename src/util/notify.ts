@@ -1,10 +1,15 @@
 import sendgrid from '@sendgrid/mail'
 import moment from 'moment-timezone'
-// var sendgrid = require('@sendgrid/mail')
+import composeEmail from './email'
 
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || 'INVALID_KEY'
 if (SENDGRID_API_KEY === 'INVALID_KEY') {
   throw new Error('Environment variable "SENDGRID_API_KEY" must be set.')
+}
+
+const FROM_EMAIL_ADDRESS = process.env.FROM_EMAIL_ADDRESS || 'INVALID_ADDRESS'
+if (FROM_EMAIL_ADDRESS === 'INVALID_ADDRESS') {
+  throw new Error('Environment variable "FROM_EMAIL_ADDRESS" must be set.')
 }
 
 sendgrid.setApiKey(SENDGRID_API_KEY)
@@ -34,33 +39,35 @@ export async function notify_user (trip: Trip, forecast: HourlyForecast) {
   let precip_intensity_human = ''
   let precip_intensity = ''
   if (forecast.precip_probability && forecast.precip_intensity) {
-    precip_intensity = `${Math.round(100 * forecast.precip_intensity) / 100} mm/h`
+    precip_intensity = `(${Math.round(100 * forecast.precip_intensity) / 100} mm/h)`
     if (forecast.precip_intensity < 2.5) precip_intensity_human = 'light '
     else if (forecast.precip_intensity < 7.6) precip_intensity_human = 'moderate '
     else if (forecast.precip_intensity < 50) precip_intensity_human = 'heavy '
     else precip_intensity_human = 'violent '
   }
 
+  const temperature = Math.round(forecast.temperature)
+  const precip_probability = Math.round(100 * forecast.precip_probability)
+
   // TODO : Use template, add icon and DarkSky attribution
   // The sendgrid module mail attributes deviate from the official API documentation and are listed here:
   // https://github.com/sendgrid/sendgrid-nodejs/blob/master/packages/helpers/classes/mail.js
-  let message = {
-    to: trip.email,
-    from: {
-      email: 'flodoesthings+raincheck@gmail.com',
-      name: 'Raincheck'
-    },
-    subject: `${forecast.summary} during ${trip.name} at ${trip_start}`,
-    content: [{
-      type: 'text/plain',
-      value: `The conditions for ${trip.name} from ${trip_start} to ${trip_end} will be:\n` +
-        `${forecast.summary} with an average temperature of ${Math.round(forecast.temperature)} °C\n` +
-        `${Math.round(100 * forecast.precip_probability)}% chance of ${precip_intensity_human}` +
-        `${forecast.precip_type || 'precipitation'} (${precip_intensity})\n`
-    }]
-  }
+  let message = composeEmail(
+    FROM_EMAIL_ADDRESS,
+    trip.email,
+    forecast.icon, {
+      name: trip.name,
+      start: trip_start,
+      end: trip_end,
+      summary: forecast.summary || '',
+      temperature: temperature,
+      precipProbability: precip_probability,
+      precipType: forecast.precip_type || 'precipitation',
+      precipIntensity: precip_intensity,
+      precipIntensityHuman: precip_intensity_human
+    }
+  )
   if (send_at_unix) message = Object.assign({ sendAt: send_at_unix }, message)
-  console.log(message)
   sendgrid.send(message).then(([response, _body]) => {
     console.log(`Status: ${response.statusCode} -- ${response.statusMessage}`)
     if (response.statusCode !== 202) {

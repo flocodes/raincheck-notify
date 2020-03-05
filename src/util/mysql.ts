@@ -13,11 +13,11 @@ const DB_CONFIG: mysql.ConnectionConfig = {
  * Create a connection to a MySQL database defined through `config`
  * @param config Config object as defined in the `mysql` module
  *
- * @returns A database connection as a promise
+ * @returns A database connection as a promise if connection is sucessful
  */
 export function mysql_connection (): Promise<mysql.Connection> {
   const connection = mysql.createConnection(DB_CONFIG)
-  return new Promise((resolve, reject) => {
+  return new Promise<mysql.Connection>((resolve, reject) => {
     connection.connect((error) => {
       if (error) {
         console.log('Error connecting to MySQL database.')
@@ -26,7 +26,7 @@ export function mysql_connection (): Promise<mysql.Connection> {
       console.log(`Connected as ${connection.threadId}`)
       resolve(connection)
     })
-  })
+  }).catch(error => Promise.reject(new Error(`Could not connect to MySQL database: ${error}`)))
 }
 
 export function end_mysql_connection (connection: mysql.Connection) {
@@ -70,8 +70,8 @@ export function promise_query (connection: mysql.Connection, query: string): Pro
  *
  * @returns A list of trips with the user info flat in the object, as a promise
  */
-export async function get_trips (interval: number): Promise<Array<Trip>> {
-  const connection = await mysql_connection()
+export async function get_trips (interval: number): Promise<Array<Trip>|null> {
+  const connection = await mysql_connection().catch(error => Promise.reject(new Error(error)))
   const now = new Date()
   now.setUTCFullYear(1970, 0, 1)
   now.setSeconds(0, 0)
@@ -92,7 +92,7 @@ export async function get_trips (interval: number): Promise<Array<Trip>> {
 }
 
 export async function write_forecasts (forecasts: Array<HourlyForecast>) {
-  const connection = await mysql_connection()
+  const connection = await mysql_connection().catch(error => Promise.reject(new Error(error)))
   for (const forecast of forecasts) {
     const trip_id = forecast.trip
     delete forecast.trip

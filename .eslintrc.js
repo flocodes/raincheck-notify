@@ -25,6 +25,9 @@ module.exports = {
     'no-trailing-spaces': ['warn', {'ignoreComments': true}],
     // Replace default eslint rule with typescript-specific one
     'no-unused-vars': 'off',
-    '@typescript-eslint/no-unused-vars': ['error', {'argsIgnorePattern': '^_'}],
+    '@typescript-eslint/no-unused-vars': ['error', {
+      'argsIgnorePattern': '^_',
+      'varsIgnorePattern': '^_',
+    }],
   }
 }
