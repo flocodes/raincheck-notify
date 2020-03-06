@@ -5,7 +5,7 @@
   "license": "MIT",
   "scripts": {
     "start": "ts-node --files src/index.ts",
-    "lint": "eslint src/**"
+    "lint": "eslint . --ext ts"
   },
   "dependencies": {
     "@sendgrid/mail": "^6.5.2",
