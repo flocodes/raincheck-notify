@@ -4,7 +4,8 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "start": "ts-node --files src/index.ts"
+    "start": "ts-node --files src/index.ts",
+    "lint": "eslint src/**"
   },
   "dependencies": {
     "@sendgrid/mail": "^6.5.2",

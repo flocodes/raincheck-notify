@@ -12,7 +12,7 @@
  *
  * @param trip Trip to get forecast locations for
  */
-export function get_forecast_locations (trip: Trip): Array<TimedForecastLocation> {
+export function getForecastLocations (trip: Trip): Array<TimedForecastLocation> {
   const lat = (trip.from_lat + trip.to_lat) / 2
   const lon = (trip.from_lon + trip.to_lon) / 2
   // Need to use getTime() in arithmetic so typescript does not complain about wrong type
@@ -31,7 +31,7 @@ export function get_forecast_locations (trip: Trip): Array<TimedForecastLocation
  *
  * @param trip Trip to get the location for
  */
-export function get_forecast_location (trip: Trip): ForecastLocation {
+export function getForecastLocation (trip: Trip): ForecastLocation {
   const lat = (trip.from_lat + trip.to_lat) / 2
   const lon = (trip.from_lon + trip.to_lon) / 2
   return { lat, lon }

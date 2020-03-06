@@ -1,6 +1,6 @@
 import { DarkSky, Units, Exclude, Forecast } from 'darkskyapi-ts'
 import * as moment from 'moment-timezone'
-import { get_forecast_location } from './common'
+import { getForecastLocation } from './common'
 
 // Get minutely forecast data in addition to hourly data if possible and overwrite hourly precipitation data
 const DO_MINUTELY_FORECAST = true
@@ -22,39 +22,39 @@ const darkSky = new DarkSky(DARKSKY_API_SECRET, { units: Units.SI })
  *
  * @returns An HourlyForecast object or null if the forecast could not be retrieved
  */
-export async function get_trip_forecast (trip: Trip): Promise<HourlyForecast | null> {
-  const location = get_forecast_location(trip)
+export async function getTripForecast (trip: Trip): Promise<HourlyForecast | null> {
+  const location = getForecastLocation(trip)
   const exclude = [Exclude.CURRENTLY, Exclude.DAILY]
-  let request_minutely_forecast = true
+  let requestMinutelyForecast = true
   if (!DO_MINUTELY_FORECAST || trip.end.getTime() - new Date().getTime() < 3600 * 1000) {
     exclude.push(Exclude.MINUTELY)
-    request_minutely_forecast = false
+    requestMinutelyForecast = false
   }
   const forecast = await darkSky.forecast(location.lat, location.lon, {
     units: Units.SI,
     exclude
   })
 
-  const hourly_forecast = get_hourly_forecast(trip, forecast)
+  const hourlyForecast = getHourlyForecast(trip, forecast)
   console.log(`Hourly forecast for trip ${trip.id}:`)
-  console.log(hourly_forecast)
+  console.log(hourlyForecast)
 
-  if (!hourly_forecast) return null
+  if (!hourlyForecast) return null
 
-  if (request_minutely_forecast) {
-    const minutely_forecast = get_minutely_forecast(trip, forecast)
+  if (requestMinutelyForecast) {
+    const minutelyForecast = getMinutelyForecast(trip, forecast)
     console.log(`Minutely forecast for trip ${trip.id}:`)
-    console.log(minutely_forecast)
-    if (minutely_forecast) {
+    console.log(minutelyForecast)
+    if (minutelyForecast) {
       console.log(`Replacing hourly forecast with minutely data for trip ${trip.id}`)
-      hourly_forecast.precip_intensity = minutely_forecast?.precip_intensity
-      hourly_forecast.precip_probability = minutely_forecast.precip_probability
-      hourly_forecast.precip_type = minutely_forecast?.precip_type
+      hourlyForecast.precipIntensity = minutelyForecast?.precipIntensity
+      hourlyForecast.precipProbability = minutelyForecast.precipProbability
+      hourlyForecast.precipType = minutelyForecast?.precipType
     } else {
       console.log(`Requested minutely forecast for trip ${trip.id}, but could not determine minutely data. Using hourly forecast.`)
     }
   }
-  return hourly_forecast
+  return hourlyForecast
 }
 
 /**
@@ -71,7 +71,7 @@ export async function get_trip_forecast (trip: Trip): Promise<HourlyForecast | n
  * @returns The maximum precipitation probability, intensity, the most common precipitation type
  * and the average temperature
  */
-function get_hourly_forecast (trip: Trip, forecast: Forecast): HourlyForecast | null {
+function getHourlyForecast (trip: Trip, forecast: Forecast): HourlyForecast | null {
   if (!forecast.hourly) {
     console.log(`The forecast for trip with ID ${trip.id} does not contain hourly data.`)
     return null
@@ -80,14 +80,14 @@ function get_hourly_forecast (trip: Trip, forecast: Forecast): HourlyForecast | 
   // Set up time comparison between trip and forecast
   const today = new Date().getUTCDay()
   console.log(`Trip ${trip.id} start ${trip.start.toISOString()}, end ${trip.end.toISOString()}.`)
-  const trip_start_hour = trip.start.getUTCHours()
-  const trip_end_hour = trip.end.getUTCHours()
-  const trip_middle_hour = Math.floor(0.5 * (trip_start_hour + trip_end_hour))
+  const tripStartHour = trip.start.getUTCHours()
+  const tripEndHour = trip.end.getUTCHours()
+  const tripMiddleHour = Math.floor(0.5 * (tripStartHour + tripEndHour))
 
   // Extract data for time points from hourly data
-  let precip_intensity = 0
-  let precip_probability = 0
-  const precip_types = {
+  let precipIntensity = 0
+  let precipProbability = 0
+  const precipTypes = {
     rain: 0,
     snow: 0,
     sleet: 0
@@ -101,19 +101,19 @@ function get_hourly_forecast (trip: Trip, forecast: Forecast): HourlyForecast | 
     // Unix time = Time in seconds since 01.01.1970
     // JS time = Time in *milli*seconds since 01.01.1970
     // => Need to multiply DarkSky time by 1000, then apply time zone
-    const point_date = moment.tz(point.time * 1000, forecast.timezone).toDate()
-    const point_hour = point_date.getUTCHours()
-    if (point_date.getUTCDay() === today && point_hour >= trip_start_hour && point_hour <= trip_end_hour) {
+    const pointDate = moment.tz(point.time * 1000, forecast.timezone).toDate()
+    const pointHour = pointDate.getUTCHours()
+    if (pointDate.getUTCDay() === today && pointHour >= tripStartHour && pointHour <= tripEndHour) {
       console.log(
-        `Using point ${point_date.toISOString()} for trip ${trip.id} forecast: ` +
+        `Using point ${pointDate.toISOString()} for trip ${trip.id} forecast: ` +
         `PI ${point.precipIntensity}, PP ${point.precipProbability}, PT ${point.precipType}, T ${point.temperature}.`
       )
       count++
-      if (point.precipIntensity > precip_intensity) precip_intensity = point.precipIntensity
-      if (point.precipProbability > precip_probability) precip_probability = point.precipProbability
-      if (point.precipType) precip_types[point.precipType]++
+      if (point.precipIntensity > precipIntensity) precipIntensity = point.precipIntensity
+      if (point.precipProbability > precipProbability) precipProbability = point.precipProbability
+      if (point.precipType) precipTypes[point.precipType]++
       temperature += point.temperature
-      if (point_hour === trip_middle_hour) {
+      if (pointHour === tripMiddleHour) {
         icon = point.icon
         summary = point.summary
       }
@@ -130,10 +130,10 @@ function get_hourly_forecast (trip: Trip, forecast: Forecast): HourlyForecast | 
   temperature /= count
   const date = new Date()
   date.setUTCHours(0, 0, 0, 0)
-  const ret: HourlyForecast = { trip: trip.id, precip_probability, temperature, date }
-  if (precip_intensity) ret.precip_intensity = precip_intensity
-  const precip_type = get_precip_type(precip_types)
-  if (precip_type) ret.precip_type = precip_type
+  const ret: HourlyForecast = { trip: trip.id, precipProbability: precipProbability, temperature, date }
+  if (precipIntensity) ret.precipIntensity = precipIntensity
+  const precipType = getPrecipType(precipTypes)
+  if (precipType) ret.precipType = precipType
   if (icon) ret.icon = icon
   if (summary) ret.summary = summary
   return ret
@@ -158,38 +158,38 @@ function get_hourly_forecast (trip: Trip, forecast: Forecast): HourlyForecast | 
  * @returns The maximum precipitation probability, intensity and the most common precipitation
  * type during the trip
  */
-function get_minutely_forecast (trip: Trip, forecast: Forecast): MinutelyForecast | null {
+function getMinutelyForecast (trip: Trip, forecast: Forecast): MinutelyForecast | null {
   if (!forecast.minutely) {
     console.log(`The forecast for trip with ID ${trip.id} does not contain minutely data.`)
     return null
   }
 
   // Set date of trip start and end to today
-  const trip_start = new Date()
-  trip_start.setUTCHours(trip.start.getUTCHours(), trip.start.getUTCMinutes(), 0, 0)
-  const trip_end = new Date()
-  trip_end.setUTCHours(trip.end.getUTCHours(), trip.end.getUTCMinutes(), 0, 0)
+  const tripStart = new Date()
+  tripStart.setUTCHours(trip.start.getUTCHours(), trip.start.getUTCMinutes(), 0, 0)
+  const tripEnd = new Date()
+  tripEnd.setUTCHours(trip.end.getUTCHours(), trip.end.getUTCMinutes(), 0, 0)
 
   // Extract data for time points from minutely data
-  let precip_probability = 0
-  let precip_intensity = 0
-  const precip_types = {
+  let precipProbability = 0
+  let precipIntensity = 0
+  const precipTypes = {
     rain: 0,
     snow: 0,
     sleet: 0
   }
   let count = 0
   for (const point of forecast.minutely.data) {
-    const point_date = moment.tz(point.time * 1000, forecast.timezone).toDate()
-    if (point_date > trip_start && point_date < trip_end) {
+    const pointDate = moment.tz(point.time * 1000, forecast.timezone).toDate()
+    if (pointDate > tripStart && pointDate < tripEnd) {
       console.log(
-        `Using point ${point_date.toISOString()} for trip ${trip.id} forecast: ` +
+        `Using point ${pointDate.toISOString()} for trip ${trip.id} forecast: ` +
         `PI ${point.precipIntensity}, PP ${point.precipProbability}, PT ${point.precipType}.`
       )
       count++
-      if (point.precipProbability > precip_probability) precip_probability = point.precipProbability
-      if (point.precipIntensity > precip_intensity) precip_intensity = point.precipIntensity
-      if (point.precipType) precip_types[point.precipType]++
+      if (point.precipProbability > precipProbability) precipProbability = point.precipProbability
+      if (point.precipIntensity > precipIntensity) precipIntensity = point.precipIntensity
+      if (point.precipType) precipTypes[point.precipType]++
     }
   }
 
@@ -200,21 +200,21 @@ function get_minutely_forecast (trip: Trip, forecast: Forecast): MinutelyForecas
   }
 
   // Compute the return value
-  const ret: MinutelyForecast = { precip_probability }
-  if (precip_intensity) ret.precip_intensity = precip_intensity
-  const precip_type = get_precip_type(precip_types)
-  if (precip_type) ret.precip_type = precip_type
+  const ret: MinutelyForecast = { precipProbability: precipProbability }
+  if (precipIntensity) ret.precipIntensity = precipIntensity
+  const precipType = getPrecipType(precipTypes)
+  if (precipType) ret.precipType = precipType
   return ret
 }
 
-function get_precip_type (precip_types: { [k: string]: number }) {
-  let precip_type = null
-  let max_count = 0
-  for (const [key, value] of Object.entries(precip_types)) {
-    if (value > max_count) {
-      precip_type = key
-      max_count = value
+function getPrecipType (precipTypes: { [k: string]: number }) {
+  let precipType = null
+  let maxCount = 0
+  for (const [key, value] of Object.entries(precipTypes)) {
+    if (value > maxCount) {
+      precipType = key
+      maxCount = value
     }
   }
-  return precip_type
+  return precipType
 }

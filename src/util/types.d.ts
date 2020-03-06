@@ -1,4 +1,5 @@
 declare interface Trip {
+  /* eslint-disable camelcase */
   id: string
   enabled: Boolean
   name: string
@@ -10,23 +11,24 @@ declare interface Trip {
   to_lon: number
   notify_at: Date
   email: string
+  /* eslint-enable camelcase */
 }
 
 declare interface HourlyForecast {
   trip: string
   date: Date | string
-  precip_probability: number
+  precipProbability: number
   temperature: number
-  precip_intensity?: number
-  precip_type?: string
+  precipIntensity?: number
+  precipType?: string
   icon?: string
   summary?: string
 }
 
 declare interface MinutelyForecast {
-  precip_probability: number
-  precip_intensity?: number
-  precip_type?: string
+  precipProbability: number
+  precipIntensity?: number
+  precipType?: string
 }
 
 declare interface ForecastLocation {

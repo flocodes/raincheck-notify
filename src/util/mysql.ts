@@ -15,7 +15,7 @@ const DB_CONFIG: mysql.ConnectionConfig = {
  *
  * @returns A database connection as a promise if connection is sucessful
  */
-export function mysql_connection (): Promise<mysql.Connection> {
+export function mysqlConnection (): Promise<mysql.Connection> {
   const connection = mysql.createConnection(DB_CONFIG)
   return new Promise<mysql.Connection>((resolve, reject) => {
     connection.connect((error) => {
@@ -29,7 +29,7 @@ export function mysql_connection (): Promise<mysql.Connection> {
   }).catch(error => Promise.reject(new Error(`Could not connect to MySQL database: ${error}`)))
 }
 
-export function end_mysql_connection (connection: mysql.Connection) {
+export function endMysqlConnection (connection: mysql.Connection) {
   connection.end((error) => {
     if (error) {
       console.log('Error ending MySQL database connection')
@@ -39,7 +39,7 @@ export function end_mysql_connection (connection: mysql.Connection) {
 }
 
 // Promise-based query
-export function promise_query (connection: mysql.Connection, query: string): Promise<Array<any>> {
+export function promiseQuery (connection: mysql.Connection, query: string): Promise<Array<any>> {
   return new Promise((resolve, reject) => {
     console.log(`Executing query ${query}`)
     connection.query(
@@ -70,8 +70,8 @@ export function promise_query (connection: mysql.Connection, query: string): Pro
  *
  * @returns A list of trips with the user info flat in the object, as a promise
  */
-export async function get_trips (interval: number): Promise<Array<Trip>|null> {
-  const connection = await mysql_connection().catch(error => Promise.reject(new Error(error)))
+export async function getTrips (interval: number): Promise<Array<Trip>|null> {
+  const connection = await mysqlConnection().catch(error => Promise.reject(new Error(error)))
   const now = new Date()
   now.setUTCFullYear(1970, 0, 1)
   now.setSeconds(0, 0)
@@ -81,31 +81,30 @@ export async function get_trips (interval: number): Promise<Array<Trip>|null> {
   const from = now.toISOString()
   const to = later.toISOString()
 
-  // TODO: Only get trips without forecasts for today
-  const trips = await promise_query(
+  const trips = await promiseQuery(
     connection,
     'SELECT Trip.*, User.email FROM `Trip` LEFT JOIN `User` ON Trip.user = User.id ' +
     `WHERE \`enabled\` = 1 AND \`notify_at\` >= "${from}" AND \`notify_at\` < "${to}"`
   )
-  end_mysql_connection(connection)
+  endMysqlConnection(connection)
   return trips
 }
 
-export async function write_forecasts (forecasts: Array<HourlyForecast>) {
-  const connection = await mysql_connection().catch(error => Promise.reject(new Error(error)))
+export async function writeForecasts (forecasts: Array<HourlyForecast>) {
+  const connection = await mysqlConnection().catch(error => Promise.reject(new Error(error)))
   for (const forecast of forecasts) {
-    const trip_id = forecast.trip
+    const tripId = forecast.trip
     delete forecast.trip
     if (forecast.date instanceof Date) forecast.date = forecast.date.toISOString().slice(0, -1)
-    await promise_query(
+    await promiseQuery(
       connection,
-      `UPDATE \`Trip\` SET \`forecast\` = '${JSON.stringify(forecast)}' WHERE \`id\` = "${trip_id}";`
+      `UPDATE \`Trip\` SET \`forecast\` = '${JSON.stringify(forecast)}' WHERE \`id\` = "${tripId}";`
     ).catch(error => {
-      console.log(`Could not write forecast for trip ${trip_id} to DB`)
+      console.log(`Could not write forecast for trip ${tripId} to DB`)
       console.log(error.stack)
     })
   }
-  end_mysql_connection(connection)
+  endMysqlConnection(connection)
 }
 
 /*
