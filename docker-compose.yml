@@ -1,0 +1,14 @@
+version: '3'
+services:
+  backend:
+    #image: flodocks/raincheck-notify:latest
+    build: .
+    environment:
+      - MYSQL_HOST
+      - MYSQL_PORT
+      - MYSQL_USER
+      - MYSQL_PASSWORD
+      - MYSQL_DATABASE
+      - DARKSKY_API_SECRET
+      - SENDGRID_API_KEY
+      - FROM_EMAIL_ADDRESS
