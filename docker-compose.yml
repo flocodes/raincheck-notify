@@ -1,8 +1,7 @@
 version: '3'
 services:
   backend:
-    #image: flodocks/raincheck-notify:latest
-    build: .
+    image: flodocks/raincheck-notify:latest
     environment:
       - MYSQL_HOST
       - MYSQL_PORT
