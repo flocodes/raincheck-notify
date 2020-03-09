@@ -4,10 +4,12 @@ import { getTrips, writeForecasts } from './util/mysql'
 import { getTripForecast } from './util/darksky'
 import { notifyUser } from './util/notify'
 
+const NOTIFICATION_INTERVAL = Number(process.env.NOTIFICATION_INTERVAL || 60)
+
 async function getForecasts () {
   console.log(`${new Date().toISOString()}: Getting forecasts`)
   console.log('Getting trips from database')
-  const trips = await getTrips(12 * 60).catch(error => Promise.reject(new Error(error)))
+  const trips = await getTrips(NOTIFICATION_INTERVAL).catch(error => Promise.reject(new Error(error)))
 
   if (!trips || trips.length === 0) {
     console.log('No trips to process')
