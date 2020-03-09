@@ -13,6 +13,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY ["package.json", "yarn.lock", "./"]
+COPY ./static ./static
 RUN yarn install --frozen-lockfile --production && yarn cache clean
 COPY --from=build /app/build ./build
 

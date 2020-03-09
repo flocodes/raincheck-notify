@@ -12,3 +12,8 @@ services:
       - SENDGRID_API_KEY
       - FROM_EMAIL_ADDRESS
       - NOTIFICATION_INTERVAL
+
+networks:
+  default:
+    external:
+      name: raincheck-db_notify
