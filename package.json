@@ -12,7 +12,7 @@
     "start-dev": "ts-node --files src/index.ts"
   },
   "dependencies": {
-    "@sendgrid/mail": "^6.5.2",
+    "@sendgrid/mail": "6.5.3",
     "darkskyapi-ts": "^1.0.6",
     "dotenv": "^8.2.0",
     "mjml": "^4.6.2",
