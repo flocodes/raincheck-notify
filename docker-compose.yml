@@ -16,4 +16,4 @@ services:
 networks:
   default:
     external:
-      name: raincheck-db_notify
+      name: raincheck-notify
