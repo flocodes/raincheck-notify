@@ -16,7 +16,7 @@
     "darkskyapi-ts": "^1.0.6",
     "dotenv": "^8.2.0",
     "mjml": "^4.6.2",
-    "moment": "^2.24.0",
+    "moment": "^2.29.4",
     "moment-timezone": "^0.5.27",
     "mysql": "^2.18.1"
   },
